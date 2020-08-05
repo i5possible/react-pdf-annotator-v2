@@ -1,3 +1,14 @@
 .App {
   text-align: center;
 }
+
+.document {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+}
+.canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}

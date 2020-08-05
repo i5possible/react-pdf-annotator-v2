@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import './App.css';
 import {degrees, PDFDocument, rgb, StandardFonts} from 'pdf-lib';
 import {Document, Page, pdfjs} from 'react-pdf';
@@ -6,12 +6,15 @@ import {Document, Page, pdfjs} from 'react-pdf';
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
 
-
 const pdfUrl = 'https://i5possible.github.io/assets/cheat-sheet/github-git-cheat-sheet.pdf';
 
 const App = () => {
 
     const [pdfDoc, setPdfDoc] = useState(null)
+    const docRef = useRef(null);
+    const pageRef = useRef(null);
+    const canvasRef = useRef(null);
+    const [canvasObjects, setCanvasObjects] = useState([]);
 
     useEffect(() => {
         const fetchPdf = async () => {
@@ -46,9 +49,14 @@ const App = () => {
     const [numPages, setNumPages] = useState(null);
     const [pageNumber, setPageNumber] = useState(1);
 
-    function onDocumentLoadSuccess({ numPages }) {
+    function onDocumentLoadSuccess({numPages}) {
         setNumPages(numPages);
         setPageNumber(1);
+    }
+
+    function onPageLoadSuccess() {
+        canvasRef.current.width = pageRef.current.ref.offsetWidth;
+        canvasRef.current.height = pageRef.current.ref.offsetHeight;
     }
 
     function changePage(offset) {
@@ -66,10 +74,22 @@ const App = () => {
     return (
         <>
             <Document
+                ref={docRef}
                 file={pdfUrl}
                 onLoadSuccess={onDocumentLoadSuccess}
+                className='document'
             >
-                <Page pageNumber={pageNumber} renderTextLayer={false}/>
+                <Page
+                    ref={pageRef}
+                    className='page'
+                    pageNumber={pageNumber}
+                    renderTextLayer={false}
+                    onLoadSuccess={onPageLoadSuccess}
+                />
+                <canvas
+                    ref={canvasRef}
+                    className='canvas'
+                />
             </Document>
             <div>
                 <p>
