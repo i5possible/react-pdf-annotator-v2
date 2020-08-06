@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import './PdfAnnotator.css';
-import {degrees, PDFDocument, rgb, StandardFonts} from 'pdf-lib';
+import {degrees, PDFDocument, PDFImage, rgb, StandardFonts} from 'pdf-lib';
 import {Document, Page, pdfjs} from 'react-pdf';
 import { fabric } from "fabric";
 import download from "downloadjs";
@@ -57,9 +57,9 @@ const PdfAnnotator = () => {
             top: 200,
             fontSize: 14,
             width: 100,
-            fill: rgb(0.1,0.1,0.1),
+            fill: rgb(0.7,0.1,0.1),
             strokeWidth: 1,
-            stroke: "#333333",
+            stroke: "#ee3333",
         });
 
         setFabricObjData([textbox]);
@@ -90,12 +90,28 @@ const PdfAnnotator = () => {
         const firstPage = pages[0]
         const textObj = fabricObjData[0]
         const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
-        firstPage.drawText(textObj.text, {
-            x: textObj.left,
-            y: firstPage.getHeight() - textObj.top - 10,
-            size: textObj.fontSize,
-            font: helveticaFont,
-            color: textObj.fill
+        // firstPage.drawText(textObj.text, {
+        //     x: textObj.left,
+        //     y: firstPage.getHeight() - textObj.top - 10,
+        //     size: textObj.fontSize,
+        //     font: helveticaFont,
+        //     color: textObj.fill
+        // })
+        const dataURL = fabricObj.toDataURL({
+            width: fabricObj.width,
+            height: fabricObj.height,
+            left: 0,
+            top: 0,
+            format: 'png',
+        });
+        let image = await pdfDoc.embedPng(dataURL);
+        const imageDims = image.scale(1)
+
+        firstPage.drawImage(image, {
+            x: 0,
+            y: 0,
+            width: imageDims.width,
+            height: imageDims.height,
         })
         const pdfBytes = await pdfDoc.save();
         download(pdfBytes, 'sample.pdf', "application/pdf");
