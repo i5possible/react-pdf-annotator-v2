@@ -8,13 +8,6 @@
   padding: 1rem;
 }
 
-.toolbar {
-  display: flex;
-  height: 50px;
-  width: 60rem;
-  padding: 10px;
-}
-
 .pdf-content {
   display: flex;
   align-items: flex-start;
@@ -22,7 +15,14 @@
   background-color: rgb(241, 248, 252);
 }
 
+.toolbar {
+  display: flex;
+  width: 60rem;
+  justify-content: center;
+}
+
 .tool {
+  padding-right: 1rem;
   display: inline-block;
   height: 100%;
   border: none;
