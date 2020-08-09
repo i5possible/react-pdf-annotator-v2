@@ -1,12 +1,66 @@
-.App {
-  text-align: center;
+.pdf-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #eeeeee;
+  margin: 1rem;
+  padding: 1rem;
+}
+
+.toolbar {
+  display: flex;
+  height: 50px;
+  width: 60rem;
+  padding: 10px;
+}
+
+.pdf-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background-color: rgb(241, 248, 252);
+}
+
+.tool {
+  display: inline-block;
+  height: 100%;
+  border: none;
+}
+
+.tool-button {
+  border: none;
+  background: none;
+}
+
+.tool-button:hover {
+  background-color: rgb(241, 248, 252);
+}
+
+.pencil:focus {
+  background-color: rgb(241, 248, 252);
+}
+
+.hidden {
+  display: none;
+}
+
+.labelButton {
+  padding: 0.4rem;
+
+}
+
+.labelButton:hover {
+  background-color: aliceblue;
 }
 
 .document {
   display: flex;
+  position: relative;
   align-items: center;
   justify-content: start;
 }
+
 .canvas-container {
   position: absolute !important;
   top: 0;

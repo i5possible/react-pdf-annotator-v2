@@ -1,8 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
 import './PdfAnnotator.css';
-import {degrees, PDFDocument, PDFImage, rgb, StandardFonts} from 'pdf-lib';
+import {PDFDocument, rgb, StandardFonts} from 'pdf-lib';
 import {Document, Page, pdfjs} from 'react-pdf';
-import { fabric } from "fabric";
+import {fabric} from "fabric";
 import download from "downloadjs";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
@@ -10,13 +10,14 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 const pdfUrl = 'https://i5possible.github.io/assets/cheat-sheet/github-git-cheat-sheet.pdf';
 
 const PdfAnnotator = () => {
+    const width = 600;
 
     const [pdfDoc, setPdfDoc] = useState(null)
     const docRef = useRef(null);
     const pageRef = useRef(null);
     const canvasRef = useRef(null);
     const [numPages, setNumPages] = useState(null);
-    const [pageNumber, setPageNumber] = useState(null);
+    const [pageNumber, setPageNumber] = useState(1);
     const [fabricObj, setFabricObj] = useState(null);
     const [fabricObjData, setFabricObjData] = useState({})
 
@@ -49,7 +50,7 @@ const PdfAnnotator = () => {
             freeDrawingBrush: {
                 width: 1,
             },
-            isDrawingMode: false,
+            isDrawingMode: true,
         });
 
         const textbox = new fabric.Textbox('This is a Textbox object', {
@@ -70,7 +71,6 @@ const PdfAnnotator = () => {
 
     function onDocumentLoadSuccess({numPages}) {
         setNumPages(numPages);
-        setPageNumber(1);
     }
 
     function onPageLoadSuccess() {
@@ -85,7 +85,7 @@ const PdfAnnotator = () => {
         fabricObj.setHeight(pageRef.current.ref.offsetHeight)
     }
 
-    async function onClick() {
+    async function onPrintClick() {
         const pages = pdfDoc.getPages()
         const firstPage = pages[0]
         const textObj = fabricObjData[0]
@@ -117,30 +117,89 @@ const PdfAnnotator = () => {
         download(pdfBytes, 'sample.pdf', "application/pdf");
     }
 
+    const onPencilClick = () => {
+        fabricObj.isDrawingMode = !fabricObj.isDrawingMode;
+    };
+
+    const onDeleteClick = () => {
+        const activeObjects = fabricObj.getActiveObjects();
+        if (activeObjects && window.confirm("Are you sure to delete?")) {
+            fabricObj.remove(...activeObjects);
+        }
+    }
+
+    const onTextClick = () => {
+        const textbox = new fabric.Textbox('This is a Textbox object', {
+            left: 100,
+            top: 90,
+            fontSize: 14,
+            width: 100,
+            fill: '#880E4F',
+            strokeWidth: 1,
+            stroke: "#D81B60",
+        });
+
+        fabricObj.add(textbox);
+    }
+
     return (
-        <>
-            <Document
-                ref={docRef}
-                file={pdfUrl}
-                onLoadSuccess={onDocumentLoadSuccess}
-                className='document'
-            >
-                <canvas
-                    ref={canvasRef}
-                    className='canvas-container'
-                />
-                <Page
-                    ref={pageRef}
-                    className='page'
-                    pageNumber={pageNumber}
-                    renderTextLayer={false}
-                    onLoadSuccess={onPageLoadSuccess}
-                />
-            </Document>
-            <button onClick={onClick}>
-                Save
-            </button>
-        </>
+        <div className="pdf-container">
+            <div className="toolbar">
+                <div className="tool">
+                    <button className="tool-button">
+                        <i className="fa fa-pencil"
+                           title="Pencil"
+                           onClick={onPencilClick}>
+                        </i>
+                    </button>
+                </div>
+                <div className="tool">
+                    <button className="tool-button">
+                        <i className="fa fa-print"
+                           title="Print"
+                           onClick={onPrintClick}>
+                        </i>
+                    </button>
+                </div>
+                <div className="tool">
+                    <button className="tool-button">
+                        <i className="fa fa-font"
+                           title="Print"
+                           onClick={onTextClick}>
+                        </i>
+                    </button>
+                </div>
+                <div className="tool">
+                    <button className="tool-button">
+                        <i className="fa fa-remove"
+                           title="Print"
+                           onClick={onDeleteClick}>
+                        </i>
+                    </button>
+                </div>
+            </div>
+            <div className="pdf-content" style={{width: width}}>
+                <Document
+                    ref={docRef}
+                    file={pdfUrl}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    className='document'
+                >
+                    <canvas
+                        ref={canvasRef}
+                        className='canvas-container'
+                    />
+                    <Page
+                        ref={pageRef}
+                        className='page'
+                        pageNumber={pageNumber}
+                        renderTextLayer={false}
+                        width={width}
+                        onLoadSuccess={onPageLoadSuccess}
+                    />
+                </Document>
+            </div>
+        </div>
     );
 }
 
