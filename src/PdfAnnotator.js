@@ -53,21 +53,25 @@ const PdfAnnotator = () => {
             isDrawingMode: false,
         });
 
-        const textbox = new fabric.Textbox('This is a Textbox object', {
-            left: 100,
-            top: 200,
-            fontSize: 14,
-            width: 100,
-            fill: rgb(0.7,0.1,0.1),
-            strokeWidth: 1,
-            stroke: "#ee3333",
-        });
-
-        setFabricObjData([textbox]);
-
-        fabricObj.add(textbox);
+        // const textbox = new fabric.Textbox('This is a Textbox object', {
+        //     left: 100,
+        //     top: 200,
+        //     fontSize: 14,
+        //     width: 100,
+        //     fill: rgb(0.7,0.1,0.1),
+        //     strokeWidth: 1,
+        //     stroke: "#ee3333",
+        // });
+        //
+        // setFabricObjData([textbox]);
+        //
+        // fabricObj.add(textbox);
         setFabricObj(fabricObj);
     }, [canvasRef.current, pdfDoc])
+  
+    useEffect(() => {
+        loadCurrentPageFabricObj(pageNumber)
+    }, [pageNumber]);
 
     function onDocumentLoadSuccess({numPages}) {
         setNumPages(numPages);
@@ -86,6 +90,7 @@ const PdfAnnotator = () => {
     }
 
     async function onPrintClick() {
+        registerCurrentPageFabricObjs();
         const pages = pdfDoc.getPages()
         const firstPage = pages[0]
         const textObj = fabricObjData[0]
@@ -127,6 +132,8 @@ const PdfAnnotator = () => {
 
     const onPencilClick = () => {
         fabricObj.isDrawingMode = !fabricObj.isDrawingMode;
+        console.log(fabricObj.isDrawingMode)
+        registerCurrentPageFabricObjs();
     };
 
     const onDeleteClick = () => {
@@ -134,6 +141,7 @@ const PdfAnnotator = () => {
         if (activeObjects && window.confirm("Are you sure to delete?")) {
             fabricObj.remove(...activeObjects);
         }
+        registerCurrentPageFabricObjs();
     }
 
     const onTextClick = () => {
@@ -146,11 +154,35 @@ const PdfAnnotator = () => {
             strokeWidth: 1,
             stroke: "#D81B60",
         });
-
+    
+        fabricObj.isDrawingMode = false;
         fabricObj.add(textbox);
+        registerCurrentPageFabricObjs();
+    }
+    
+    const clearCanvas = () => {
+        fabricObj.clear();
+    }
+    
+    const registerCurrentPageFabricObjs = () => {
+        let newObjData = {
+            ...fabricObjData,
+            [pageNumber]: fabricObj.getObjects(),
+        };
+        setFabricObjData(newObjData)
+        console.log(JSON.stringify(newObjData))
+    }
+    
+    const loadCurrentPageFabricObj = () => {
+        (fabricObjData[pageNumber] || []).forEach(object => {
+            console.log(object);
+            fabricObj.add(object);
+        })
     }
     
     const changePage = (offset) => {
+        registerCurrentPageFabricObjs();
+        clearCanvas();
         setPageNumber(prevPageNumber => prevPageNumber + offset);
     }
     
