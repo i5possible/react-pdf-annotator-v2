@@ -50,7 +50,7 @@ const PdfAnnotator = () => {
             freeDrawingBrush: {
                 width: 1,
             },
-            isDrawingMode: true,
+            isDrawingMode: false,
         });
 
         const textbox = new fabric.Textbox('This is a Textbox object', {
@@ -89,6 +89,7 @@ const PdfAnnotator = () => {
         const pages = pdfDoc.getPages()
         const firstPage = pages[0]
         const textObj = fabricObjData[0]
+        console.log(JSON.stringify(textObj));
         const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
         // firstPage.drawText(textObj.text, {
         //     x: textObj.left,
@@ -98,6 +99,9 @@ const PdfAnnotator = () => {
         //     color: textObj.fill
         // })
         const dataURL = fabricObj.toDataURL({
+            enableRetinaScaling: true,
+            withoutTransform: true,
+            withoutShadow: true,
             width: fabricObj.width,
             height: fabricObj.height,
             left: 0,
@@ -105,14 +109,18 @@ const PdfAnnotator = () => {
             format: 'png',
         });
         let image = await pdfDoc.embedPng(dataURL);
+        console.log(image.size())
         const imageDims = image.scale(1)
+        console.log(imageDims.height)
+        console.log(imageDims.width)
 
         firstPage.drawImage(image, {
             x: 0,
             y: 0,
-            width: imageDims.width,
-            height: imageDims.height,
+            width: imageDims.width / fabric.devicePixelRatio,
+            height: imageDims.height / fabric.devicePixelRatio,
         })
+
         const pdfBytes = await pdfDoc.save();
         download(pdfBytes, 'sample.pdf', "application/pdf");
     }
@@ -130,8 +138,8 @@ const PdfAnnotator = () => {
 
     const onTextClick = () => {
         const textbox = new fabric.Textbox('This is a Textbox object', {
-            left: 100,
-            top: 90,
+            left: 0,
+            top: 0,
             fontSize: 14,
             width: 100,
             fill: '#880E4F',
@@ -140,6 +148,18 @@ const PdfAnnotator = () => {
         });
 
         fabricObj.add(textbox);
+    }
+    
+    const changePage = (offset) => {
+        setPageNumber(prevPageNumber => prevPageNumber + offset);
+    }
+    
+    const previousPage = () => {
+        changePage(-1);
+    }
+    
+    const nextPage = () => {
+        changePage(1);
     }
 
     return (
@@ -198,6 +218,20 @@ const PdfAnnotator = () => {
                         onLoadSuccess={onPageLoadSuccess}
                     />
                 </Document>
+            </div>
+            <div className="page-control">
+                <button className="left"
+                    disabled={pageNumber <= 1}
+                    onClick={previousPage}
+                >
+                    <i className="fa fa-arrow-left" />
+                </button>
+                <button className="right"
+                    disabled={pageNumber >= numPages}
+                    onClick={nextPage}
+                >
+                    <i className="fa fa-arrow-right" />
+                </button>
             </div>
         </div>
     );
