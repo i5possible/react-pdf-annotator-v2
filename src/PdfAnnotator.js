@@ -22,22 +22,22 @@ const PdfAnnotator = () => {
     const [fabricObjData, setFabricObjData] = useState({})
 
     console.log('canvasRef', canvasRef.current);
+    
+    const fetchPdf = async () => {
+        console.log('fetching pdf...')
+        const existingPdfBytes = await fetch(pdfUrl).then((res) => res.arrayBuffer());
+        console.log('file loaded')
+        // const uint8Array = new Uint8Array(existingPdfBytes);
+        // setFileView(uint8Array);
+        const pdfDoc = await PDFDocument.load(existingPdfBytes)
+        
+        const pages = pdfDoc.getPages()
+        console.log(pages);
+        setPdfDoc(pdfDoc)
+    }
 
     useEffect(() => {
-        const fetchPdf = async () => {
-            console.log('fetching pdf...')
-            const existingPdfBytes = await fetch(pdfUrl).then((res) => res.arrayBuffer());
-            console.log('file loaded')
-            // const uint8Array = new Uint8Array(existingPdfBytes);
-            // setFileView(uint8Array);
-            const pdfDoc = await PDFDocument.load(existingPdfBytes)
-
-            const pages = pdfDoc.getPages()
-            console.log(pages);
-            setPdfDoc(pdfDoc)
-        }
         fetchPdf();
-
     }, [pdfUrl])
 
     useEffect(() => {
@@ -90,19 +90,14 @@ const PdfAnnotator = () => {
     }
 
     async function onPrintClick() {
-        registerCurrentPageFabricObjs();
-        const pages = pdfDoc.getPages()
-        const firstPage = pages[0]
-        const textObj = fabricObjData[0]
-        console.log(JSON.stringify(textObj));
-        const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica)
-        // firstPage.drawText(textObj.text, {
-        //     x: textObj.left,
-        //     y: firstPage.getHeight() - textObj.top - 10,
-        //     size: textObj.fontSize,
-        //     font: helveticaFont,
-        //     color: textObj.fill
-        // })
+    
+        console.log("-----------------------------");
+        console.log(JSON.stringify(fabricObjData));
+        console.log("-----------------------------");
+        const currentPageFabricObj = fabricObj.getObjects();
+        const pages = pdfDoc.getPages();
+    
+        const currentPage = pages[pageNumber-1];
         const dataURL = fabricObj.toDataURL({
             enableRetinaScaling: true,
             withoutTransform: true,
@@ -113,21 +108,57 @@ const PdfAnnotator = () => {
             top: 0,
             format: 'png',
         });
-        let image = await pdfDoc.embedPng(dataURL);
-        console.log(image.size())
+        const image = await pdfDoc.embedPng(dataURL);
         const imageDims = image.scale(1)
-        console.log(imageDims.height)
-        console.log(imageDims.width)
-
-        firstPage.drawImage(image, {
+    
+        currentPage.drawImage(image, {
             x: 0,
             y: 0,
             width: imageDims.width / fabric.devicePixelRatio,
             height: imageDims.height / fabric.devicePixelRatio,
         })
+        
+        for(let currentPageNumber = 1; currentPageNumber <= numPages; currentPageNumber++) {
+            if (currentPageNumber === pageNumber) {
+                continue
+            }
+            const currentPage = pages[currentPageNumber-1];
+            clearCanvas();
+            loadCurrentPageFabricObj(currentPageNumber);
+            const dataURL = fabricObj.toDataURL({
+                enableRetinaScaling: true,
+                withoutTransform: true,
+                withoutShadow: true,
+                width: fabricObj.width,
+                height: fabricObj.height,
+                left: 0,
+                top: 0,
+                format: 'png',
+            });
+            const image = await pdfDoc.embedPng(dataURL);
+            const imageDims = image.scale(1)
+    
+            currentPage.drawImage(image, {
+                x: 0,
+                y: 0,
+                width: imageDims.width / fabric.devicePixelRatio,
+                height: imageDims.height / fabric.devicePixelRatio,
+            })
+        }
 
         const pdfBytes = await pdfDoc.save();
         download(pdfBytes, 'sample.pdf', "application/pdf");
+        loadCurrentPageFabricObj(pageNumber);
+    
+        setFabricObjData({
+            ...fabricObjData,
+            [pageNumber]: currentPageFabricObj,
+        })
+        
+        clearCanvas();
+        (currentPageFabricObj || []).forEach(object => {
+            fabricObj.add(object);
+        })
     }
 
     const onPencilClick = () => {
@@ -161,7 +192,7 @@ const PdfAnnotator = () => {
     }
     
     const clearCanvas = () => {
-        fabricObj.clear();
+        fabricObj && fabricObj.clear();
     }
     
     const registerCurrentPageFabricObjs = () => {
@@ -173,16 +204,15 @@ const PdfAnnotator = () => {
         console.log(JSON.stringify(newObjData))
     }
     
-    const loadCurrentPageFabricObj = () => {
+    const loadCurrentPageFabricObj = (pageNumber) => {
+        clearCanvas();
         (fabricObjData[pageNumber] || []).forEach(object => {
-            console.log(object);
             fabricObj.add(object);
         })
     }
     
     const changePage = (offset) => {
         registerCurrentPageFabricObjs();
-        clearCanvas();
         setPageNumber(prevPageNumber => prevPageNumber + offset);
     }
     
