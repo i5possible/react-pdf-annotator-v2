@@ -7,10 +7,11 @@
 - JsPDF: write the drawings to a new pdf.
 
 ## Tasks
-1. [ ] Load the pdf from given address
-2. [ ] render the whole pdf with pages
-3. [ ] able to add free draw to the pdf(Doesn't care the position)
-4. [ ] able to add the text to the pdf(Doesn't care the position) 
-5. [ ] the 2D object is added to given place
-6. [ ] save the result as a pdf
-7. [ ] able to upload the pdf 
+- [x] Load the pdf from given address
+- [x] able to add free draw to the pdf(Doesn't care the position)
+- [x] able to add the text to the pdf(Doesn't care the position) 
+- [x] the 2D object is added to given place
+- [x] save the result as a pdf
+- [x] able to upload the pdf
+- [x] render the whole pdf with pages 
+- [x] able to paste image into pdf
