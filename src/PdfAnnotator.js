@@ -1,17 +1,19 @@
 import React, {useEffect, useRef, useState} from 'react';
 import './PdfAnnotator.css';
-import {PDFDocument, rgb, StandardFonts} from 'pdf-lib';
+import {PDFDocument} from 'pdf-lib';
 import {Document, Page, pdfjs} from 'react-pdf';
 import {fabric} from "fabric";
 import download from "downloadjs";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
-const pdfUrl = 'https://i5possible.github.io/assets/cheat-sheet/github-git-cheat-sheet.pdf';
+// const pdfUrl = 'https://i5possible.github.io/assets/cheat-sheet/github-git-cheat-sheet.pdf';
 
 const PdfAnnotator = () => {
     const width = 600;
 
+    const [pdfFile, setPdfFile] = useState("");
+    const [existingPdfBytes, setExistingPdfBytes] = useState("");
     const [pdfDoc, setPdfDoc] = useState(null)
     const docRef = useRef(null);
     const pageRef = useRef(null);
@@ -21,24 +23,21 @@ const PdfAnnotator = () => {
     const [fabricObj, setFabricObj] = useState(null);
     const [fabricObjData, setFabricObjData] = useState({})
 
-    console.log('canvasRef', canvasRef.current);
+    // const fetchPdf = async () => {
+    //     console.log('fetching pdf...')
+    //     const existingPdfBytes = await fetch(pdfUrl).then((res) => res.arrayBuffer());
+    //     console.log('file loaded')
+    //     // const uint8Array = new Uint8Array(existingPdfBytes);
+    //     // setFileView(uint8Array);
+    //     const pdfDoc = await PDFDocument.load(existingPdfBytes)
+    //
+    //     const pages = pdfDoc.getPages()
+    //     console.log(pages);
+    //     setPdfDoc(pdfDoc)
+    // }
     
-    const fetchPdf = async () => {
-        console.log('fetching pdf...')
-        const existingPdfBytes = await fetch(pdfUrl).then((res) => res.arrayBuffer());
-        console.log('file loaded')
-        // const uint8Array = new Uint8Array(existingPdfBytes);
-        // setFileView(uint8Array);
-        const pdfDoc = await PDFDocument.load(existingPdfBytes)
-        
-        const pages = pdfDoc.getPages()
-        console.log(pages);
-        setPdfDoc(pdfDoc)
-    }
-
     useEffect(() => {
-        fetchPdf();
-    }, [pdfUrl])
+    }, [existingPdfBytes])
 
     useEffect(() => {
         console.log('render canvas:', canvasRef.current)
@@ -72,28 +71,46 @@ const PdfAnnotator = () => {
     useEffect(() => {
         loadCurrentPageFabricObj(pageNumber)
     }, [pageNumber]);
+    
+    const onUploadPDF = e => {
+        const files = e.target.files || (e.dataTransfer && e.dataTransfer.files);
+        const file = files[0];
+        if (!file || file.type !== "application/pdf") {
+            return;
+        }
+        try {
+            const reader = new FileReader();
+    
+            reader.onload = async function(e) {
+                const arrayBuffer = new Uint8Array(reader.result);
+                const pdfDoc = await PDFDocument.load(arrayBuffer)
+                setPdfFile(file);
+                setExistingPdfBytes(arrayBuffer);
+                setPdfDoc(pdfDoc)
+            }
+            reader.readAsArrayBuffer(file);
+        } catch (error) {
+            console.log(error);
+        }
+    }
 
-    function onDocumentLoadSuccess({numPages}) {
+    const onDocumentLoadSuccess = ({numPages}) => {
         setNumPages(numPages);
     }
 
-    function onPageLoadSuccess() {
+    const onPageLoadSuccess = () => {
         if (!fabricObj) {
             return;
         }
         setCanvasWindow()
     }
 
-    function setCanvasWindow() {
+    const setCanvasWindow = () => {
         fabricObj.setWidth(pageRef.current.ref.offsetWidth)
         fabricObj.setHeight(pageRef.current.ref.offsetHeight)
     }
 
     async function onPrintClick() {
-    
-        console.log("-----------------------------");
-        console.log(JSON.stringify(fabricObjData));
-        console.log("-----------------------------");
         const currentPageFabricObj = fabricObj.getObjects();
         const pages = pdfDoc.getPages();
     
@@ -183,12 +200,22 @@ const PdfAnnotator = () => {
             width: 100,
             fill: '#880E4F',
             strokeWidth: 1,
-            stroke: "#D81B60",
+            stroke: "#880E4F",
         });
     
         fabricObj.isDrawingMode = false;
         fabricObj.add(textbox);
         registerCurrentPageFabricObjs();
+    }
+    
+    const onUploadImage = (e) => {
+        fabricObj.isDrawingMode = false;
+        const file = e.target.files[0];
+        console.log('image file:', file);
+        if (file) {
+            addImage(file);
+        }
+        e.target.value = null;
     }
     
     const clearCanvas = () => {
@@ -223,10 +250,61 @@ const PdfAnnotator = () => {
     const nextPage = () => {
         changePage(1);
     }
+    
+    const readAsDataURL = file =>
+      new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+      })
+    
+    const readAsImage = async (src) =>
+      new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          if (src instanceof Blob) {
+              img.src = window.URL.createObjectURL(src);
+          } else {
+              img.src = src;
+          }
+      })
+    
+    const addImage = async (file) => {
+        try {
+            // get dataURL to prevent canvas from tainted
+            const url = await readAsDataURL(file);
+            const img = await readAsImage(url);
+            const image = new fabric.Image(img);
+            
+            fabricObj.add(image);
+        } catch (e) {
+            console.log(`Fail to add image.`, e);
+        }
+    }
 
     return (
         <div className="pdf-container">
             <div className="toolbar">
+                <div className="tool">
+                    <label className={'labelButton'} htmlFor={'pdf'}>Choose pdf</label>
+                    <input
+                      type="file"
+                      name="pdf"
+                      id="pdf"
+                      onChange={onUploadPDF}
+                      className="hidden"/>
+                </div>
+                <div className="tool">
+                    <label className={'labelButton'} htmlFor={'image'}>Choose image</label>
+                    <input
+                      type="file"
+                      id="image"
+                      name="image"
+                      className="hidden"
+                      onChange={onUploadImage}/>
+                </div>
                 <div className="tool">
                     <button className="tool-button">
                         <i className="fa fa-pencil"
@@ -263,7 +341,7 @@ const PdfAnnotator = () => {
             <div className="pdf-content" style={{width: width}}>
                 <Document
                     ref={docRef}
-                    file={pdfUrl}
+                    file={pdfFile}
                     onLoadSuccess={onDocumentLoadSuccess}
                     className='document'
                 >
