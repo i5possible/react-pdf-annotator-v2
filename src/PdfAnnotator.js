@@ -67,6 +67,46 @@ const PdfAnnotator = () => {
         // fabricObj.add(textbox);
         setFabricObj(fabricObj);
     }, [canvasRef.current, pdfDoc])
+    
+    useEffect(() => {
+        if (fabricObj) {
+            document.addEventListener('paste', function (e) { paste_auto(e, fabricObj); }, false);
+        }
+    }, [fabricObj])
+    
+    const paste_auto = (e, fabricObj) => {
+        if (e.clipboardData) {
+            const items = e.clipboardData.items;
+            if (!items) return;
+            
+            //access data directly
+            let is_image = false;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf("image") !== -1) {
+                    //image
+                    const blob = items[i].getAsFile();
+                    const URLObj = window.URL || window.webkitURL;
+                    const source = URLObj.createObjectURL(blob);
+                    paste_createImage(source, fabricObj);
+                    is_image = true;
+                }
+            }
+            if(is_image === true){
+                e.preventDefault();
+            }
+        }
+    };
+    
+    const paste_createImage = (source, fabricObj) => {
+        const pastedImage = new Image();
+        pastedImage.onload = async () => {
+            const img = await readAsImage(source);
+            const image = new fabric.Image(img);
+            fabricObj.add(image);
+            registerCurrentPageFabricObjs();
+        };
+        pastedImage.src = source;
+    };
   
     useEffect(() => {
         loadCurrentPageFabricObj(pageNumber)
@@ -356,27 +396,28 @@ const PdfAnnotator = () => {
                     </button>
                 </div>
             </div>
-            <div className="pdf-content" style={{width: width}}>
+            {pdfFile && <div className="pdf-content" style={{width: width}}>
                 <Document
-                    ref={docRef}
-                    file={pdfFile}
-                    onLoadSuccess={onDocumentLoadSuccess}
-                    className='document'
+                  ref={docRef}
+                  file={pdfFile}
+                  onLoadSuccess={onDocumentLoadSuccess}
+                  className='document'
                 >
                     <canvas
-                        ref={canvasRef}
-                        className='canvas-container'
+                      ref={canvasRef}
+                      className='canvas-container'
                     />
                     <Page
-                        ref={pageRef}
-                        className='page'
-                        pageNumber={pageNumber}
-                        renderTextLayer={false}
-                        width={width}
-                        onLoadSuccess={onPageLoadSuccess}
+                      ref={pageRef}
+                      className='page'
+                      pageNumber={pageNumber}
+                      renderTextLayer={false}
+                      width={width}
+                      onLoadSuccess={onPageLoadSuccess}
                     />
                 </Document>
             </div>
+            }
             <div className="page-control">
                 <button className="left"
                     disabled={pageNumber <= 1}
