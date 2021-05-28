@@ -203,13 +203,23 @@ const PdfAnnotator = () => {
             stroke: "#880E4F",
         });
     
-        fabricObj.isDrawingMode = false;
+        disablePencil();
         fabricObj.add(textbox);
         registerCurrentPageFabricObjs();
     }
     
+    const disablePencil = () => {
+        if (fabricObj) {
+            fabricObj.isDrawingMode = false;
+        }
+    }
+    
+    const onPointerClick = () => {
+        disablePencil();
+    }
+    
     const onUploadImage = (e) => {
-        fabricObj.isDrawingMode = false;
+        disablePencil();
         const file = e.target.files[0];
         console.log('image file:', file);
         if (file) {
@@ -304,6 +314,14 @@ const PdfAnnotator = () => {
                       name="image"
                       className="hidden"
                       onChange={onUploadImage}/>
+                </div>
+                <div className="tool">
+                    <button className="tool-button">
+                        <i className="fa fa-mouse-pointer"
+                           title="Pointer"
+                           onClick={onPointerClick}>
+                        </i>
+                    </button>
                 </div>
                 <div className="tool">
                     <button className="tool-button">
